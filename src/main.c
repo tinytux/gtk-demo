@@ -1,7 +1,9 @@
 #include <gtk/gtk.h>
+#include <webkit2/webkit2.h>
 #include <stdlib.h>
 
 static GtkWidget *g_window = NULL;
+static GtkWidget *g_webviewbox = NULL;
 static GtkWidget *g_stars_drawing_area = NULL;
 static cairo_surface_t *g_surface = NULL;
 
@@ -189,13 +191,16 @@ static gboolean on_key_esc_pressed(GtkWidget *widget, GdkEventKey *event, gpoint
 int main(int argc, char *argv[])
 {
   GtkBuilder *builder;
+  GError     *error = NULL;
 
   gtk_init(&argc, &argv);
 
   builder = gtk_builder_new();
-  if (gtk_builder_add_from_file(builder, "data/ui/window.glade", NULL) == 0)
+  gtk_builder_add_from_file(builder, "data/ui/window.glade", &error);
+  if(error != NULL)
   {
-    printf("ERROR: can not load data/ui/window.glade\n");
+    printf("ERROR: %s\n", error->message);
+    g_error_free(error);
     exit(EXIT_FAILURE);
   }
 
@@ -212,6 +217,18 @@ int main(int argc, char *argv[])
     printf("ERROR: can not find widget 'window'\n");
     exit(EXIT_FAILURE);
   }
+
+  g_webviewbox = GTK_WIDGET(gtk_builder_get_object(builder, "webviewbox"));
+  if (g_webviewbox == 0)
+  {
+    printf("ERROR: can not find widget 'webviewbox'\n");
+    exit(EXIT_FAILURE);
+  }
+
+  WebKitWebView *webview =  WEBKIT_WEB_VIEW(webkit_web_view_new());
+  gtk_container_add(GTK_CONTAINER(g_webviewbox), GTK_WIDGET(webview));
+  webkit_web_view_load_uri(webview, "http://www.webkitgtk.org/");
+  gtk_widget_grab_focus(GTK_WIDGET(webview));
 
   gtk_builder_connect_signals(builder, NULL);
   g_signal_connect(g_window, "key_press_event", G_CALLBACK(on_key_esc_pressed), NULL);

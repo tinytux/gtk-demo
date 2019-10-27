@@ -5,6 +5,10 @@ cmake_minimum_required(VERSION 2.8)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK REQUIRED gtk+-3.0)
 
+# Find WebKit
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GTK REQUIRED webkit2gtk-4.0)
+
 # use GTK
 include_directories(${GTK_INCLUDE_DIRS})
 link_directories(${GTK_LIBRARY_DIRS})
