@@ -1,11 +1,12 @@
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 #include <stdlib.h>
+#include <strings.h>
 
 static GtkWidget *g_window = NULL;
-static GtkWidget *g_webviewbox = NULL;
 static GtkWidget *g_stars_drawing_area = NULL;
 static cairo_surface_t *g_surface = NULL;
+static GtkWidget *g_webkit = NULL;
 
 typedef struct
 {
@@ -122,6 +123,12 @@ static gboolean move_the_stars_timer(GtkWidget *widget)
       cairo_rectangle(cr, g_stars[i].x - 4, g_stars[i].y - 4, 8, 8);
       cairo_fill(cr);
       cairo_destroy(cr);
+
+      if (!(GTK_IS_WIDGET(widget))) {
+        // widget becomes invalid on shutdown
+        return FALSE;
+      }
+
       // invalidate the drawing area
       gtk_widget_queue_draw_area(widget, g_stars[i].x - 4, g_stars[i].y - 4, 8, 8);
 
@@ -167,11 +174,13 @@ void on_button_fullscreen_clicked()
  */
 void on_button_exit_clicked()
 {
+  printf("exit button clicked\n");
   gtk_main_quit();
 }
 
 void on_window_main_destroy()
 {
+  printf("close main window\n");
   gtk_main_quit();
 }
 
@@ -179,10 +188,44 @@ static gboolean on_key_esc_pressed(GtkWidget *widget, GdkEventKey *event, gpoint
 {
   if (event->keyval == GDK_KEY_Escape)
   {
+    printf("ESC key pressed\n");
     gtk_main_quit();
     return TRUE;
   }
   return FALSE;
+}
+
+/**
+ * Debug
+ */
+void dump_widgets(GtkWidget *parent)
+{
+  if (GTK_IS_CONTAINER(parent)) {
+    GList *children = gtk_container_get_children(GTK_CONTAINER(parent));
+    while (children) {
+        GtkWidget *child = GTK_WIDGET (children->data);
+        printf ("  type = %s\n", G_OBJECT_TYPE_NAME (child));
+
+        if (GTK_IS_CONTAINER(child)) {
+          dump_widgets(child);
+        }
+        children = children->next;
+    }
+  }
+}
+
+/**
+ * Web
+ */
+void switch_page(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data)
+{
+  printf("page_num = %d  - type: %s\n", page_num, G_OBJECT_TYPE_NAME(page));
+  if (page_num == 1) {
+    const gchar* uri = "http://html5test.com/";
+    printf("reloading %s\n", uri);
+    webkit_web_view_load_uri(WEBKIT_WEB_VIEW(g_webkit), uri);
+  }
+  dump_widgets(page);
 }
 
 /************
@@ -190,17 +233,27 @@ static gboolean on_key_esc_pressed(GtkWidget *widget, GdkEventKey *event, gpoint
  ************/
 int main(int argc, char *argv[])
 {
-  GtkBuilder *builder;
-  GError     *error = NULL;
+  GError *error = NULL;
 
   gtk_init(&argc, &argv);
 
-  builder = gtk_builder_new();
+  // Create a browser instance before the GTK builder can run
+  WebKitWebView *webkit_init = WEBKIT_WEB_VIEW(webkit_web_view_new());
+
+  // Now build the UI (including a WebKitWebView)
+  GtkBuilder *builder = gtk_builder_new();
   gtk_builder_add_from_file(builder, "data/ui/window.glade", &error);
   if(error != NULL)
   {
     printf("ERROR: %s\n", error->message);
     g_error_free(error);
+    exit(EXIT_FAILURE);
+  }
+
+  g_webkit = GTK_WIDGET(gtk_builder_get_object(builder, "webkit"));
+  if (g_webkit == 0)
+  {
+    printf("ERROR: can not find widget 'webkit'\n");
     exit(EXIT_FAILURE);
   }
 
@@ -217,18 +270,6 @@ int main(int argc, char *argv[])
     printf("ERROR: can not find widget 'window'\n");
     exit(EXIT_FAILURE);
   }
-
-  g_webviewbox = GTK_WIDGET(gtk_builder_get_object(builder, "webviewbox"));
-  if (g_webviewbox == 0)
-  {
-    printf("ERROR: can not find widget 'webviewbox'\n");
-    exit(EXIT_FAILURE);
-  }
-
-  WebKitWebView *webview =  WEBKIT_WEB_VIEW(webkit_web_view_new());
-  gtk_container_add(GTK_CONTAINER(g_webviewbox), GTK_WIDGET(webview));
-  webkit_web_view_load_uri(webview, "http://www.webkitgtk.org/");
-  gtk_widget_grab_focus(GTK_WIDGET(webview));
 
   gtk_builder_connect_signals(builder, NULL);
   g_signal_connect(g_window, "key_press_event", G_CALLBACK(on_key_esc_pressed), NULL);

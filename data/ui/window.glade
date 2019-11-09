@@ -11,6 +11,7 @@ without any warranty.
 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <requires lib="webkit2gtk" version="2.12"/>
   <!-- interface-license-type all_permissive -->
   <object class="GtkWindow" id="window">
     <property name="name">ddd</property>
@@ -22,11 +23,13 @@ without any warranty.
       <placeholder/>
     </child>
     <child>
-      <object class="GtkNotebook">
+      <object class="GtkNotebook" id="notebook">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
+        <signal name="switch-page" handler="switch_page" swapped="no"/>
         <child>
-          <object class="GtkViewport">
+          <object class="GtkViewport" id="tab_stars">
+            <property name="name">tabstars</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -65,25 +68,47 @@ without any warranty.
           </packing>
         </child>
         <child>
-          <object class="GtkViewport">
+          <object class="GtkViewport" id="tab_web">
+            <property name="name">webtab</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
+                <property name="homogeneous">True</property>
                 <child>
-                  <object class="GtkScrolledWindow" id="webviewbox">
+                  <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
                     <property name="shadow_type">in</property>
+                    <property name="propagate_natural_width">True</property>
+                    <property name="propagate_natural_height">True</property>
                     <child>
-                      <placeholder/>
+                      <object class="GtkViewport">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="WebKitWebView" id="webkit">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
+                            <property name="vexpand">True</property>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
+                    <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
@@ -100,7 +125,7 @@ without any warranty.
           <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">HTML5 Stars</property>
+            <property name="label" translatable="yes">Web</property>
           </object>
           <packing>
             <property name="position">1</property>
@@ -108,7 +133,8 @@ without any warranty.
           </packing>
         </child>
         <child>
-          <object class="GtkViewport">
+          <object class="GtkViewport" id="tab_exit">
+            <property name="name">tabexit</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -132,7 +158,7 @@ without any warranty.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton">
+                  <object class="GtkButton" id="button_exit">
                     <property name="label" translatable="yes">Exit</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -150,7 +176,6 @@ without any warranty.
           </object>
           <packing>
             <property name="position">2</property>
-            <property name="tab_expand">True</property>
           </packing>
         </child>
         <child type="tab">
@@ -163,12 +188,6 @@ without any warranty.
             <property name="position">2</property>
             <property name="tab_fill">False</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child type="tab">
-          <placeholder/>
         </child>
       </object>
     </child>
